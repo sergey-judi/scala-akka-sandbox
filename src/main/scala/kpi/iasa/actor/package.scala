@@ -17,4 +17,6 @@ package actor {
 
   case class RegisterTripCommand(trip: Trip) extends Command
 
+  case class RegisterUnsuccessfulTripCommand(trip: Trip) extends Command
+
 }

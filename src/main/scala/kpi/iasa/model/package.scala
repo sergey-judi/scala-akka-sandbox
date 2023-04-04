@@ -21,10 +21,6 @@ package model {
 
     case object ChillingWithFriend extends PassengerState
 
-    //    case object WillingToContact extends PassengerState
-
-    //    case object WillingToGoHome extends PassengerState
-
     case object OnTrip extends PassengerState
 
     def apply(id: Int, home: Point) = new Passenger(id, home)
@@ -63,6 +59,7 @@ package model {
 
   object Vehicle {
     val defaultSpeed = 60
+    val defaultRate = 100
 
     sealed trait VehicleState
 
@@ -70,19 +67,32 @@ package model {
 
     case object Free extends VehicleState
 
-    def apply(id: Int, currentLocation: Point) = new Vehicle(id, defaultSpeed, currentLocation)
+    def apply(id: Int, currentLocation: Point) = new Vehicle(id, defaultSpeed, defaultRate, currentLocation)
   }
 
-  case class Vehicle(id: Int, speed: Int = Vehicle.defaultSpeed, var currentLocation: Point, var state: VehicleState = Free) {
+  case class Vehicle(id: Int,
+                     speed: Int = Vehicle.defaultSpeed,
+                     rate: Double,
+                     var currentLocation: Point,
+                     var state: VehicleState = Free,
+                     var balance: Double = 0) {
     def setBusy(): Unit = this.state = Busy
 
     def setFree(): Unit = this.state = Free
 
     def distanceTo(destination: Point): Double = this.currentLocation.distanceTo(destination)
+
+    def addFunds(funds: Double): Unit = this.balance += funds
   }
 
-  case class Trip(passenger: Passenger, vehicle: Vehicle, from: Point, to: Point, timeAwaiting: Long, duration: Long)
+  case class Trip(passenger: Passenger,
+                  vehicle: Vehicle,
+                  from: Point,
+                  to: Point,
+                  timeAwaiting: Long,
+                  duration: Long,
+                  cost: Double)
 
-  case class TripStatistics(averageTimeAwaiting: Long, averageTimeOnTrip: Long)
+  case class TripStatistics(averageTimeAwaiting: Long, averageTimeOnTrip: Long, averageTripCost: Double)
 
 }

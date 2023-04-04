@@ -20,6 +20,8 @@ class DriverActor(vehicle: Vehicle) extends Actor {
 
   val log: Logger = LoggerFactory.getLogger(classOf[DriverActor])
   val speed = 60
+  val happinessThreshold = 3.5
+  val divider = 100_000_000_000L
 
   override def receive: Receive = {
     case BuildRouteCommand(passenger, host, replyTo) =>
@@ -33,26 +35,39 @@ class DriverActor(vehicle: Vehicle) extends Actor {
 
       val totalDuration = timeToAwaitMillis + tripDurationMillis
 
-      scheduleReply(totalDuration.nanoseconds) {
-        vehicle.currentLocation = destination
-        vehicle.setFree()
+      val tripCost = calculateTripCost(vehicle.rate, totalDuration)
 
-        passenger.state = Passenger.ChillingWithFriend
-        host.state = Passenger.ChillingWithFriend
+      if (isPassengerSatisfied(tripCost, timeToAwaitMillis)) {
+        scheduleReply(totalDuration.nanoseconds) {
+          vehicle.currentLocation = destination
+          vehicle.addFunds(tripCost)
+          vehicle.setFree()
 
-        val currentTime = System.currentTimeMillis()
-        val chillingTime = Random.nextInt(1000)
+          passenger.state = Passenger.ChillingWithFriend
+          host.state = Passenger.ChillingWithFriend
 
-        passenger.currentLocation = destination
-        passenger.lastUpdatedAt = currentTime
-        host.lastUpdatedAt = currentTime
+          val currentTime = System.currentTimeMillis()
+          val chillingTime = Random.nextInt(1000)
 
-        passenger.chillingTime = chillingTime
-        host.chillingTime = chillingTime
+          passenger.currentLocation = destination
+          passenger.lastUpdatedAt = currentTime
+          host.lastUpdatedAt = currentTime
 
-        log.debug(s"BuildRouteCommand : releasing $vehicle")
-        val trip = Trip(passenger, vehicle, startLocation, destination, timeToAwaitMillis, tripDurationMillis)
-        replyTo ! RegisterTripCommand(trip)
+          passenger.chillingTime = chillingTime
+          host.chillingTime = chillingTime
+
+          log.debug(s"BuildRouteCommand : releasing $vehicle")
+          val trip = Trip(passenger, vehicle, startLocation, destination, timeToAwaitMillis, tripDurationMillis, tripCost)
+          replyTo ! RegisterTripCommand(trip)
+        }
+      } else {
+        scheduleReply(0.nanoseconds) {
+          vehicle.setFree()
+
+          log.debug(s"BuildRouteCommand : releasing $vehicle")
+          val trip = Trip(passenger, vehicle, startLocation, destination, timeToAwaitMillis, tripDurationMillis, tripCost)
+          replyTo ! RegisterUnsuccessfulTripCommand(trip)
+        }
       }
     case _ => log.error("UNKNOWN: received unknown command")
   }
@@ -65,5 +80,13 @@ class DriverActor(vehicle: Vehicle) extends Actor {
 
   def scheduleReply(duration: FiniteDuration)(f: => Unit): Cancellable =
     context.system.scheduler.scheduleOnce(duration)(f)
+
+  def isPassengerSatisfied(tripCost: Double, timeAwaiting: Long): Boolean = {
+    val targetFunction = (Math.pow(timeAwaiting, 2) / 100 + Math.pow(tripCost, 2) / 1000)
+
+    targetFunction > happinessThreshold
+  }
+
+  def calculateTripCost(rate: Double, time: Long): Double = time / rate * 1000 / divider
 
 }
