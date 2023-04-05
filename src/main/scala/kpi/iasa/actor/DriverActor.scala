@@ -64,6 +64,9 @@ class DriverActor(vehicle: Vehicle) extends Actor {
         scheduleReply(0.nanoseconds) {
           vehicle.setFree()
 
+          passenger.state = Passenger.TripAwaiting
+          host.state = Passenger.AtHome
+
           log.debug(s"BuildRouteCommand : releasing $vehicle")
           val trip = Trip(passenger, vehicle, startLocation, destination, timeToAwaitMillis, tripDurationMillis, tripCost)
           replyTo ! RegisterUnsuccessfulTripCommand(trip)

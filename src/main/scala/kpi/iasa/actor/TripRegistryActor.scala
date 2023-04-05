@@ -25,10 +25,10 @@ class TripRegistryActor extends Actor {
       log.info("---- UNSUCCESSFUL TRIPS RECORDED ----")
       logStatistics(unsuccessfulTrips)
     case RegisterUnsuccessfulTripCommand(trip) =>
-      log.info(s"RegisterUnsuccessfulTripCommand : Passenger#1${trip.passenger.id} is unsatisfied with Vehicle#${trip.vehicle.id}")
+      log.info(s"RegisterUnsuccessfulTripCommand : Passenger#${trip.passenger.id} is unsatisfied with Vehicle#${trip.vehicle.id}")
       unsuccessfulTrips = unsuccessfulTrips :+ trip
     case RegisterTripCommand(trip) =>
-      log.info(s"RegisterTripCommand : Passenger#1${trip.passenger.id} arrived on Vehicle#${trip.vehicle.id}")
+      log.info(s"RegisterTripCommand : Passenger#${trip.passenger.id} arrived on Vehicle#${trip.vehicle.id}")
       recordedTrips = recordedTrips :+ trip
     case _ => log.error("UNKNOWN: received unknown command")
   }
@@ -43,7 +43,7 @@ class TripRegistryActor extends Actor {
           log.info(
             s"Passenger#$passengerId "
               + s"| Avg time awaiting = ${tripsStatistics.averageTimeAwaiting} "
-              + s"| Avg time on trip = ${tripsStatistics.averageTimeOnTrip}"
+              + s"| Avg time on trip = ${tripsStatistics.averageTimeOnTrip} "
               + s"| Avg trip cost = ${tripsStatistics.averageTripCost}"
           )
       }
